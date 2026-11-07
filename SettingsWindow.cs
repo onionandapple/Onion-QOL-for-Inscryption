@@ -6,10 +6,12 @@ using UnityEngine.UI;
 namespace OnionQOL
 {
     /// <summary>
-    /// 按 F1 打开的独立设置窗口：
+    /// 按设置键（默认 F1）打开的独立设置窗口：
     /// - 启用牌组查看 + 按键
     /// - 启用抽牌堆查看 + 按键
-    /// 两个功能的按键互斥，配置值冲突时拒绝保存。
+    /// - 启用跳过按钮
+    /// - 设置面板按键
+    /// 三个按键互斥，冲突时拒绝保存。
     /// </summary>
     public class SettingsWindow : MonoBehaviour
     {
@@ -20,11 +22,15 @@ namespace OnionQOL
         private Text deckKeyText;
         private Text enableDrawValueText;
         private Text drawKeyText;
+        private Text enableSkipValueText;
+        private Text settingsKeyText;
         private Text messageText;
         private RectTransform enableDeckRow;
         private RectTransform deckKeyRow;
         private RectTransform enableDrawRow;
         private RectTransform drawKeyRow;
+        private RectTransform enableSkipRow;
+        private RectTransform settingsKeyRow;
 
         private string message = string.Empty;
         private float messageUntil;
@@ -96,7 +102,7 @@ namespace OnionQOL
             panelRt.anchorMin = new Vector2(0.5f, 0.5f);
             panelRt.anchorMax = new Vector2(0.5f, 0.5f);
             panelRt.pivot = new Vector2(0.5f, 0.5f);
-            panelRt.sizeDelta = new Vector2(900f, 720f);
+            panelRt.sizeDelta = new Vector2(900f, 880f);
 
             Text title = CreateText("Title", panel.transform, font, 40, "Onion QOL 设置");
             RectTransform titleRt = title.rectTransform;
@@ -110,6 +116,8 @@ namespace OnionQOL
             deckKeyRow = CreateRow(panel.transform, "DeckKeyRow", -200f, "打开牌组按键", out deckKeyText, font);
             enableDrawRow = CreateRow(panel.transform, "EnableDrawRow", -290f, "启用抽牌堆查看", out enableDrawValueText, font);
             drawKeyRow = CreateRow(panel.transform, "DrawKeyRow", -380f, "查看抽牌堆按键", out drawKeyText, font);
+            enableSkipRow = CreateRow(panel.transform, "EnableSkipRow", -470f, "启用跳过按钮", out enableSkipValueText, font);
+            settingsKeyRow = CreateRow(panel.transform, "SettingsKeyRow", -560f, "设置面板按键", out settingsKeyText, font);
 
             messageText = CreateText("Message", panel.transform, font, 26, string.Empty);
             messageText.color = new Color(1f, 0.75f, 0.4f, 1f);
@@ -117,10 +125,10 @@ namespace OnionQOL
             messageRt.anchorMin = new Vector2(0.5f, 1f);
             messageRt.anchorMax = new Vector2(0.5f, 1f);
             messageRt.pivot = new Vector2(0.5f, 1f);
-            messageRt.anchoredPosition = new Vector2(0f, -470f);
+            messageRt.anchoredPosition = new Vector2(0f, -650f);
             messageRt.sizeDelta = new Vector2(800f, 44f);
 
-            Text hint = CreateText("Hint", panel.transform, font, 26, "按 F1 或 ESC 关闭");
+            Text hint = CreateText("Hint", panel.transform, font, 26, "按设置键或 ESC 关闭");
             RectTransform hintRt = hint.rectTransform;
             hintRt.anchorMin = new Vector2(0.5f, 0f);
             hintRt.anchorMax = new Vector2(0.5f, 0f);
@@ -177,7 +185,7 @@ namespace OnionQOL
                     }
                     else if (RectContains(deckKeyRow))
                     {
-                        OnionQOLPlugin.Instance?.StartKeyBind(false);
+                        OnionQOLPlugin.Instance?.StartKeyBind(BindingTarget.Deck);
                     }
                     else if (RectContains(enableDrawRow))
                     {
@@ -185,7 +193,15 @@ namespace OnionQOL
                     }
                     else if (RectContains(drawKeyRow))
                     {
-                        OnionQOLPlugin.Instance?.StartKeyBind(true);
+                        OnionQOLPlugin.Instance?.StartKeyBind(BindingTarget.DrawPile);
+                    }
+                    else if (RectContains(enableSkipRow))
+                    {
+                        ToggleBool(OnionQOLPlugin.EnableSkipButton);
+                    }
+                    else if (RectContains(settingsKeyRow))
+                    {
+                        OnionQOLPlugin.Instance?.StartKeyBind(BindingTarget.Settings);
                     }
                 }
 
@@ -229,21 +245,31 @@ namespace OnionQOL
             {
                 enableDrawValueText.text = OnionQOLPlugin.EnableDrawPileViewer.Value ? "开" : "关";
             }
+            if (enableSkipValueText != null)
+            {
+                enableSkipValueText.text = OnionQOLPlugin.EnableSkipButton.Value ? "开" : "关";
+            }
 
             bool binding = OnionQOLPlugin.Instance != null && OnionQOLPlugin.Instance.AwaitingKeyBind;
-            bool bindingDraw = OnionQOLPlugin.Instance != null && OnionQOLPlugin.Instance.BindingDrawPile;
+            BindingTarget target = OnionQOLPlugin.Instance != null ? OnionQOLPlugin.Instance.BindingTarget : BindingTarget.Deck;
 
             if (deckKeyText != null)
             {
-                deckKeyText.text = (binding && !bindingDraw)
+                deckKeyText.text = (binding && target == BindingTarget.Deck)
                     ? "按任意键...（ESC 取消）"
                     : OnionQOLPlugin.DeckViewerKey.Value.ToString();
             }
             if (drawKeyText != null)
             {
-                drawKeyText.text = (binding && bindingDraw)
+                drawKeyText.text = (binding && target == BindingTarget.DrawPile)
                     ? "按任意键...（ESC 取消）"
                     : OnionQOLPlugin.DrawPileKey.Value.ToString();
+            }
+            if (settingsKeyText != null)
+            {
+                settingsKeyText.text = (binding && target == BindingTarget.Settings)
+                    ? "按任意键...（ESC 取消）"
+                    : OnionQOLPlugin.SettingsKey.Value.ToString();
             }
         }
 

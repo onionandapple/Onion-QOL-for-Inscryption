@@ -10,6 +10,13 @@ using UnityEngine.UI;
 
 namespace OnionQOL
 {
+    public enum BindingTarget
+    {
+        Deck,
+        DrawPile,
+        Settings
+    }
+
     [BepInPlugin(GUID, PluginDisplayName, PluginVersion)]
     public class OnionQOLPlugin : BaseUnityPlugin
     {
@@ -24,11 +31,13 @@ namespace OnionQOL
         public static ConfigEntry<KeyCode> DeckViewerKey;
         public static ConfigEntry<bool> EnableDrawPileViewer;
         public static ConfigEntry<KeyCode> DrawPileKey;
+        public static ConfigEntry<KeyCode> SettingsKey;
+        public static ConfigEntry<bool> EnableSkipButton;
 
         internal bool awaitingKeyBind;
-        internal bool bindingDrawPile;
+        internal BindingTarget bindingTarget;
         public bool AwaitingKeyBind => awaitingKeyBind;
-        public bool BindingDrawPile => bindingDrawPile;
+        public BindingTarget BindingTarget => bindingTarget;
 
         private void Awake()
         {
@@ -44,7 +53,7 @@ namespace OnionQOL
                 "General",
                 "DeckViewerKey",
                 KeyCode.Q,
-                "打开牌组的按键（仅支持键盘键，可在 F1 设置窗口中修改）。");
+                "打开牌组的按键（仅支持键盘键，可在设置面板中修改）。");
             EnableDrawPileViewer = Config.Bind(
                 "General",
                 "EnableDrawPileViewer",
@@ -54,7 +63,17 @@ namespace OnionQOL
                 "General",
                 "DrawPileKey",
                 KeyCode.E,
-                "查看抽牌堆的按键（仅支持键盘键，可在 F1 设置窗口中修改）。");
+                "查看抽牌堆的按键（仅支持键盘键，可在设置面板中修改）。");
+            SettingsKey = Config.Bind(
+                "General",
+                "SettingsKey",
+                KeyCode.F1,
+                "打开设置面板的按键（仅支持键盘键，可在设置面板中修改）。");
+            EnableSkipButton = Config.Bind(
+                "General",
+                "EnableSkipButton",
+                true,
+                "启用选牌/奖励界面的跳过按钮。");
 
             try
             {
@@ -85,39 +104,14 @@ namespace OnionQOL
                     KeyCode pressed = GetPressedKeyboardKey();
                     if (pressed != KeyCode.None)
                     {
-                        if (bindingDrawPile)
-                        {
-                            if (pressed == DeckViewerKey.Value)
-                            {
-                                SettingsWindow.ShowMessage("该按键已被「查看牌组」占用");
-                            }
-                            else
-                            {
-                                DrawPileKey.Value = pressed;
-                                Config.Save();
-                                SettingsWindow.ShowMessage("已设置为 " + pressed);
-                            }
-                        }
-                        else
-                        {
-                            if (pressed == DrawPileKey.Value)
-                            {
-                                SettingsWindow.ShowMessage("该按键已被「查看抽牌堆」占用");
-                            }
-                            else
-                            {
-                                DeckViewerKey.Value = pressed;
-                                Config.Save();
-                                SettingsWindow.ShowMessage("已设置为 " + pressed);
-                            }
-                        }
+                        ApplyBinding(bindingTarget, pressed);
                         awaitingKeyBind = false;
                         SettingsWindow.RefreshLabels();
                     }
                     return;
                 }
 
-                if (Input.GetKeyDown(KeyCode.F1))
+                if (Input.GetKeyDown(SettingsKey.Value))
                 {
                     if (SettingsWindow.Instance != null)
                     {
@@ -159,6 +153,46 @@ namespace OnionQOL
             }
         }
 
+        private void ApplyBinding(BindingTarget target, KeyCode key)
+        {
+            try
+            {
+                if (target == BindingTarget.Deck)
+                {
+                    if (key == DrawPileKey.Value || key == SettingsKey.Value)
+                    {
+                        SettingsWindow.ShowMessage("该按键已被其他功能占用");
+                        return;
+                    }
+                    DeckViewerKey.Value = key;
+                }
+                else if (target == BindingTarget.DrawPile)
+                {
+                    if (key == DeckViewerKey.Value || key == SettingsKey.Value)
+                    {
+                        SettingsWindow.ShowMessage("该按键已被其他功能占用");
+                        return;
+                    }
+                    DrawPileKey.Value = key;
+                }
+                else
+                {
+                    if (key == DeckViewerKey.Value || key == DrawPileKey.Value)
+                    {
+                        SettingsWindow.ShowMessage("该按键已被其他功能占用");
+                        return;
+                    }
+                    SettingsKey.Value = key;
+                }
+                Config.Save();
+                SettingsWindow.ShowMessage("已设置为 " + key);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Onion QOL 设置按键失败: " + e);
+            }
+        }
+
         private void ToggleDeckWindow(DeckWindowMode mode)
         {
             if (DeckWindow.Instance != null)
@@ -194,10 +228,10 @@ namespace OnionQOL
             return KeyCode.None;
         }
 
-        internal void StartKeyBind(bool drawPile)
+        internal void StartKeyBind(BindingTarget target)
         {
             awaitingKeyBind = true;
-            bindingDrawPile = drawPile;
+            bindingTarget = target;
             SettingsWindow.RefreshLabels();
         }
     }

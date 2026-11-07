@@ -28,6 +28,15 @@ namespace OnionQOL
         {
             try
             {
+                if (!OnionQOLPlugin.EnableSkipButton.Value)
+                {
+                    if (current != null)
+                    {
+                        current.DestroyButton();
+                    }
+                    return;
+                }
+
                 GameFlowManager flow = Singleton<GameFlowManager>.Instance;
                 GameState state = flow != null ? flow.CurrentGameState : GameState.Map;
                 bool inSpecial = state == GameState.SpecialCardSequence;
