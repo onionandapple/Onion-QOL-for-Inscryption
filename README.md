@@ -23,4 +23,4 @@ Inscryption 凯西模组生活质量模组。
 - InscryptionAPI 2.24.1
 
 ## Github地址
-- https://github.com/13764946875/Onion-QOL-for-Inscryption
+- [https://github.com/13764946875/Onion-QOL-for-Inscryption](https://github.com/onionandapple/Onion-QOL-for-Inscryption)
