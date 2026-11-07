@@ -1,0 +1,11 @@
+{
+  "name": "Onion_QOL",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/13764946875/Onion-QOL-for-Inscryption",
+  "description": "Inscryption 凯西模组实用工具：按 Q 查看本局牌组、按 E 查看抽牌堆、按 F1 打开设置；右键地图房间让莱西说明房间作用；选牌/奖励房间提供跳过按钮。",
+  "dependencies": [
+    "BepInEx-BepInExPack_Inscryption-5.4.2305",
+    "BepInEx-MonoMod_Loader_Inscryption-1.0.0",
+    "API_dev-API-2.24.1"
+  ]
+}
