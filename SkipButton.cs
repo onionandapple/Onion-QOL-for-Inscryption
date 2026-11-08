@@ -487,14 +487,90 @@ namespace OnionQOL
                 if (pile != null)
                 {
                     pile.StartCoroutine(pile.DestroyCards());
+                    if (seq is DeckTrialSequencer)
+                    {
+                        pile.gameObject.SetActive(false);
+                    }
                 }
             }
             catch
             {
             }
 
+            if (seq is DeckTrialSequencer trial)
+            {
+                CleanUpDeckTrial(trial);
+            }
+
             ReturnToMap();
             OnionQOLPlugin.Log?.LogInfo("Onion QOL: skipped card choice");
+        }
+
+        /// <summary>
+        /// 试炼房间跳过时补上正常结束流程的现场清理（洞穴入口/灯光/莱西状态/视图）。
+        /// </summary>
+        private static void CleanUpDeckTrial(DeckTrialSequencer trial)
+        {
+            try
+            {
+                ViewManager viewManager = Singleton<ViewManager>.Instance;
+                if (viewManager != null)
+                {
+                    viewManager.SwitchToView(View.Default);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                OpponentAnimationController opponent = Singleton<OpponentAnimationController>.Instance;
+                if (opponent != null)
+                {
+                    opponent.ResetHeadOffset(false);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                LeshyAnimationController leshy = LeshyAnimationController.Instance;
+                if (leshy != null)
+                {
+                    leshy.ResetEyesTexture();
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                Animator cave = AccessTools.Field(typeof(DeckTrialSequencer), "caveEntranceAnim")?.GetValue(trial) as Animator;
+                if (cave != null)
+                {
+                    cave.Play("exit", 0, 0f);
+                    cave.gameObject.SetActive(false);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                Light caveLight = AccessTools.Field(typeof(DeckTrialSequencer), "caveLight")?.GetValue(trial) as Light;
+                if (caveLight != null)
+                {
+                    caveLight.gameObject.SetActive(false);
+                }
+            }
+            catch
+            {
+            }
         }
 
         private void SkipBoulder(BoulderChoiceSequencer seq)
