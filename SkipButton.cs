@@ -43,7 +43,7 @@ namespace OnionQOL
                 bool inBattle = state == GameState.CardBattle;
                 NodeData currentData = GetCurrentNodeData();
 
-                CardSingleChoicesSequencer cardSequencer = null;
+                CardChoicesSequencer cardSequencer = null;
                 if (inBattle || (inSpecial && IsCardChoiceRoom(currentData)))
                 {
                     cardSequencer = FindActiveCardSequencer();
@@ -105,7 +105,7 @@ namespace OnionQOL
         private static bool IsCardChoiceRoom(NodeData data)
         {
             return data is CardChoicesNodeData || data is CardBundleChoicesNodeData || data is ChooseRareCardNodeData
-                || data is BossBattleNodeData || data is CardBattleNodeData;
+                || data is BossBattleNodeData || data is CardBattleNodeData || data is DeckTrialNodeData;
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace OnionQOL
                 && RunState.Run.consumables.Count >= RunState.Run.MaxConsumables;
         }
 
-        private static CardSingleChoicesSequencer FindActiveCardSequencer()
+        private static CardChoicesSequencer FindActiveCardSequencer()
         {
             CardSingleChoicesSequencer[] sequencers = UnityEngine.Object.FindObjectsOfType<CardSingleChoicesSequencer>();
             foreach (CardSingleChoicesSequencer sequencer in sequencers)
@@ -154,6 +154,20 @@ namespace OnionQOL
                 if (GetChosenReward(sequencer) != null)
                 {
                     return sequencer;
+                }
+            }
+
+            // 试炼房间：DeckTrialSequencer 自己实现选牌流程（不在 CardSingleChoicesSequencer 体系里）
+            DeckTrialSequencer[] trials = UnityEngine.Object.FindObjectsOfType<DeckTrialSequencer>();
+            foreach (DeckTrialSequencer trial in trials)
+            {
+                if (trial == null || !trial.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                if (GetCards(trial).Count > 0)
+                {
+                    return trial;
                 }
             }
             return null;
@@ -233,6 +247,10 @@ namespace OnionQOL
         {
             try
             {
+                if (!(sequencer is CardSingleChoicesSequencer))
+                {
+                    return null;
+                }
                 return AccessTools.Field(typeof(CardSingleChoicesSequencer), "chosenReward")?.GetValue(sequencer) as SelectableCard;
             }
             catch
@@ -307,7 +325,7 @@ namespace OnionQOL
             return component;
         }
 
-        private static void LogTrigger(CardSingleChoicesSequencer cardSequencer, BoulderChoiceSequencer boulderSequencer,
+        private static void LogTrigger(CardChoicesSequencer cardSequencer, BoulderChoiceSequencer boulderSequencer,
             BuyPeltsSequencer buySequencer, GainConsumablesSequencer consumablesSequencer, GameFlowManager flow, NodeData currentData)
         {
             try
@@ -362,6 +380,10 @@ namespace OnionQOL
             if (cardSequencer is BoulderChoiceSequencer)
             {
                 return "boulder";
+            }
+            if (cardSequencer is DeckTrialSequencer)
+            {
+                return "decktrial";
             }
             if (cardSequencer != null)
             {
