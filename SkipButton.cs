@@ -220,9 +220,10 @@ namespace OnionQOL
                 {
                     continue;
                 }
-                // 只有道具已满时，进道具房间才会走"给林鼠"流程
-                if (RunState.Run != null && RunState.Run.consumables != null
-                    && RunState.Run.consumables.Count >= RunState.Run.MaxConsumables)
+                // 只在场上确实出现了林鼠 3D 模型和林鼠卡牌时才显示按钮
+                GameObject rat = AccessTools.Field(typeof(GainConsumablesSequencer), "rat")?.GetValue(sequencer) as GameObject;
+                SelectableCard ratCard = AccessTools.Field(typeof(GainConsumablesSequencer), "ratCard")?.GetValue(sequencer) as SelectableCard;
+                if (rat != null && rat.activeInHierarchy && ratCard != null && ratCard.gameObject.activeInHierarchy)
                 {
                     return sequencer;
                 }
@@ -473,7 +474,8 @@ namespace OnionQOL
                 string packName = pack.name.ToLowerInvariant();
                 if (packName.Contains("cardpack") || packName.Contains("rarecardbox"))
                 {
-                    UnityEngine.Object.Destroy(pack);
+                    // 这些是场景里复用的对象，只能隐藏不能销毁，否则下一次 Boss 奖励会没有箱子/卡牌
+                    pack.SetActive(false);
                 }
             }
 
@@ -590,18 +592,16 @@ namespace OnionQOL
             if (rat != null)
             {
                 rat.SetActive(false);
-                UnityEngine.Object.Destroy(rat);
             }
             SelectableCard ratCard = AccessTools.Field(typeof(GainConsumablesSequencer), "ratCard")?.GetValue(seq) as SelectableCard;
             if (ratCard != null)
             {
                 ratCard.gameObject.SetActive(false);
-                UnityEngine.Object.Destroy(ratCard.gameObject);
             }
             GameObject backpack = AccessTools.Field(typeof(GainConsumablesSequencer), "backpack")?.GetValue(seq) as GameObject;
             if (backpack != null)
             {
-                UnityEngine.Object.Destroy(backpack);
+                backpack.SetActive(false);
             }
 
             DestroyAllSelectableCards();
@@ -632,7 +632,8 @@ namespace OnionQOL
                 string name = go.name.ToLowerInvariant();
                 if (name.Contains("clover") || name.Contains("reroll"))
                 {
-                    UnityEngine.Object.Destroy(go);
+                    // 场景复用对象，只隐藏不销毁，避免后续房间缺少三叶草
+                    go.SetActive(false);
                 }
             }
         }
