@@ -680,11 +680,8 @@ namespace OnionQOL
             {
                 rat.SetActive(false);
             }
-            SelectableCard ratCard = AccessTools.Field(typeof(GainConsumablesSequencer), "ratCard")?.GetValue(seq) as SelectableCard;
-            if (ratCard != null)
-            {
-                ratCard.gameObject.SetActive(false);
-            }
+            // 注意：不要禁用 ratCard。游戏下一次进入道具房时靠 rat.SetActive(true) 让整组林鼠显形，
+            // 如果这里把林鼠卡牌本身 SetActive(false)，第二次进入时卡牌将无法恢复显示。
             GameObject backpack = AccessTools.Field(typeof(GainConsumablesSequencer), "backpack")?.GetValue(seq) as GameObject;
             if (backpack != null)
             {
