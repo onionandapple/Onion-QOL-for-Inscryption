@@ -104,7 +104,27 @@ namespace OnionQOL
 
         private static bool IsCardChoiceRoom(NodeData data)
         {
-            return data is CardChoicesNodeData || data is CardBundleChoicesNodeData || data is ChooseRareCardNodeData;
+            return data is CardChoicesNodeData || data is CardBundleChoicesNodeData || data is ChooseRareCardNodeData
+                || data is BossBattleNodeData || data is CardBattleNodeData;
+        }
+
+        /// <summary>
+        /// 特殊房间的序列协程是由 SpecialNodeHandler 启动的，序列对象自身的 StopAllCoroutines 停不掉，
+        /// 因此这里统一停止 SpecialNodeHandler 上的协程，避免跳过之后序列继续执行（比如林鼠继续出现）。
+        /// </summary>
+        private static void StopAllSequenceCoroutines()
+        {
+            try
+            {
+                SpecialNodeHandler handler = Singleton<SpecialNodeHandler>.Instance;
+                if (handler != null)
+                {
+                    handler.StopAllCoroutines();
+                }
+            }
+            catch
+            {
+            }
         }
 
         private static bool IsConsumablesFull()
@@ -408,6 +428,7 @@ namespace OnionQOL
         private void SkipCardChoice()
         {
             CardChoicesSequencer seq = sequence;
+            StopAllSequenceCoroutines();
             seq.StopAllCoroutines();
 
             try
@@ -454,6 +475,7 @@ namespace OnionQOL
 
         private void SkipBoulder(BoulderChoiceSequencer seq)
         {
+            StopAllSequenceCoroutines();
             seq.StopAllCoroutines();
             DestroyAllSelectableCards();
 
@@ -491,6 +513,7 @@ namespace OnionQOL
         private void SkipBuyPelts()
         {
             BuyPeltsSequencer seq = buyPelts;
+            StopAllSequenceCoroutines();
             seq.StopAllCoroutines();
             DestroyAllSelectableCards();
 
@@ -538,15 +561,26 @@ namespace OnionQOL
         private void SkipConsumables()
         {
             GainConsumablesSequencer seq = consumables;
+            StopAllSequenceCoroutines();
             seq.StopAllCoroutines();
 
-            HideObject(AccessTools.Field(typeof(GainConsumablesSequencer), "rat")?.GetValue(seq) as GameObject);
+            GameObject rat = AccessTools.Field(typeof(GainConsumablesSequencer), "rat")?.GetValue(seq) as GameObject;
+            if (rat != null)
+            {
+                rat.SetActive(false);
+                UnityEngine.Object.Destroy(rat);
+            }
             SelectableCard ratCard = AccessTools.Field(typeof(GainConsumablesSequencer), "ratCard")?.GetValue(seq) as SelectableCard;
             if (ratCard != null)
             {
                 ratCard.gameObject.SetActive(false);
+                UnityEngine.Object.Destroy(ratCard.gameObject);
             }
-            HideObject(AccessTools.Field(typeof(GainConsumablesSequencer), "backpack")?.GetValue(seq) as GameObject);
+            GameObject backpack = AccessTools.Field(typeof(GainConsumablesSequencer), "backpack")?.GetValue(seq) as GameObject;
+            if (backpack != null)
+            {
+                UnityEngine.Object.Destroy(backpack);
+            }
 
             DestroyAllSelectableCards();
             ReturnToMap();
