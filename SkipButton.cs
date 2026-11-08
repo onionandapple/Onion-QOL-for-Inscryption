@@ -422,6 +422,8 @@ namespace OnionQOL
 
         private void Skip()
         {
+            // 先销毁按钮，避免跳过过程中被重复点击
+            DestroyButton();
             try
             {
                 if (buyPelts != null)
@@ -445,7 +447,6 @@ namespace OnionQOL
             {
                 OnionQOLPlugin.Log?.LogError("Onion QOL: skip failed: " + e);
             }
-            DestroyButton();
         }
 
         private void SkipCardChoice()
@@ -486,7 +487,10 @@ namespace OnionQOL
                 CardPile pile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
                 if (pile != null)
                 {
-                    pile.StartCoroutine(pile.DestroyCards());
+                    if (pile.gameObject.activeInHierarchy)
+                    {
+                        pile.StartCoroutine(pile.DestroyCards());
+                    }
                     if (seq is DeckTrialSequencer)
                     {
                         pile.gameObject.SetActive(false);
@@ -496,6 +500,9 @@ namespace OnionQOL
             catch
             {
             }
+
+            // 清空候选卡列表，避免序列的 OnViewChanged 回调访问已销毁的卡（空引用，导致无法回地图）
+            GetCards(seq).Clear();
 
             if (seq is DeckTrialSequencer trial)
             {
@@ -578,13 +585,17 @@ namespace OnionQOL
             StopAllSequenceCoroutines();
             seq.StopAllCoroutines();
             DestroyAllSelectableCards();
+            GetCards(seq).Clear();
 
             try
             {
                 CardPile pile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
                 if (pile != null)
                 {
-                    pile.StartCoroutine(pile.DestroyCards());
+                    if (pile.gameObject.activeInHierarchy)
+                    {
+                        pile.StartCoroutine(pile.DestroyCards());
+                    }
                     pile.gameObject.SetActive(false);
                 }
             }
@@ -624,7 +635,7 @@ namespace OnionQOL
             try
             {
                 CardPile pile = AccessTools.Field(typeof(BuyPeltsSequencer), "deckPile")?.GetValue(seq) as CardPile;
-                if (pile != null)
+                if (pile != null && pile.gameObject.activeInHierarchy)
                 {
                     pile.StartCoroutine(pile.DestroyCards());
                 }
