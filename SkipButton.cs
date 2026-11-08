@@ -498,9 +498,40 @@ namespace OnionQOL
                 CleanUpDeckTrial(trial);
             }
 
+            CleanUpRareCardBox(seq);
+
             LogBoxObjects();
             ReturnToMap();
             OnionQOLPlugin.Log?.LogInfo("Onion QOL: skipped card choice");
+        }
+
+        /// <summary>
+        /// Boss 奖励的稀有卡箱子：跳过时重置开箱动画并隐藏，避免下一次奖励时显示一个打开的空箱子。
+        /// </summary>
+        private static void CleanUpRareCardBox(CardChoicesSequencer seq)
+        {
+            try
+            {
+                if (!(seq is RareCardChoicesSequencer))
+                {
+                    return;
+                }
+                Transform box = AccessTools.Field(typeof(RareCardChoicesSequencer), "box")?.GetValue(seq) as Transform;
+                if (box == null)
+                {
+                    return;
+                }
+                Animator animator = box.GetComponentInChildren<Animator>(true);
+                if (animator != null)
+                {
+                    animator.Rebind();
+                    animator.Update(0f);
+                }
+                box.gameObject.SetActive(false);
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
@@ -546,7 +577,7 @@ namespace OnionQOL
                     string name = go.name.ToLowerInvariant();
                     if (name.Contains("box") || name.Contains("cardpack") || name.Contains("chest"))
                     {
-                        OnionQOLPlugin.Log?.LogInfo("Onion QOL: box object name=" + go.name + " active=" + go.activeSelf);
+                        OnionQOLPlugin.Log?.LogInfo("Onion QOL: box object name=" + go.name + " active=" + go.activeSelf + " path=" + GetTransformPath(go.transform));
                         count++;
                         if (count >= 20)
                         {
@@ -557,6 +588,24 @@ namespace OnionQOL
             }
             catch
             {
+            }
+        }
+
+        private static string GetTransformPath(Transform t)
+        {
+            try
+            {
+                string path = t.name;
+                while (t.parent != null)
+                {
+                    t = t.parent;
+                    path = t.name + "/" + path;
+                }
+                return path;
+            }
+            catch
+            {
+                return t != null ? t.name : "null";
             }
         }
 
