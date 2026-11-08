@@ -482,23 +482,12 @@ namespace OnionQOL
 
             CleanUpClover();
 
-            try
+            // 先销毁牌堆里的卡（协程挂到 SpecialNodeHandler 上，避免牌堆隐藏后协程被暂停导致卡残留）
+            CardPile cardPile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
+            DestroyCardPile(cardPile);
+            if (cardPile != null && seq is DeckTrialSequencer)
             {
-                CardPile pile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
-                if (pile != null)
-                {
-                    if (pile.gameObject.activeInHierarchy)
-                    {
-                        pile.StartCoroutine(pile.DestroyCards());
-                    }
-                    if (seq is DeckTrialSequencer)
-                    {
-                        pile.gameObject.SetActive(false);
-                    }
-                }
-            }
-            catch
-            {
+                cardPile.gameObject.SetActive(false);
             }
 
             // 清空候选卡列表，避免序列的 OnViewChanged 回调访问已销毁的卡（空引用，导致无法回地图）
@@ -509,8 +498,66 @@ namespace OnionQOL
                 CleanUpDeckTrial(trial);
             }
 
+            LogBoxObjects();
             ReturnToMap();
             OnionQOLPlugin.Log?.LogInfo("Onion QOL: skipped card choice");
+        }
+
+        /// <summary>
+        /// 销毁牌堆里的卡。协程挂在 SpecialNodeHandler 上执行，避免牌堆对象隐藏后协程被挂起。
+        /// </summary>
+        private static void DestroyCardPile(CardPile pile)
+        {
+            if (pile == null)
+            {
+                return;
+            }
+            try
+            {
+                SpecialNodeHandler handler = Singleton<SpecialNodeHandler>.Instance;
+                if (handler != null)
+                {
+                    handler.StartCoroutine(pile.DestroyCards());
+                }
+                else if (pile.gameObject.activeInHierarchy)
+                {
+                    pile.StartCoroutine(pile.DestroyCards());
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        /// <summary>
+        /// 诊断：记录场景中的箱子/卡包对象，便于定位残留的箱子。
+        /// </summary>
+        private static void LogBoxObjects()
+        {
+            try
+            {
+                int count = 0;
+                foreach (GameObject go in UnityEngine.Object.FindObjectsOfType<GameObject>())
+                {
+                    if (go == null)
+                    {
+                        continue;
+                    }
+                    string name = go.name.ToLowerInvariant();
+                    if (name.Contains("box") || name.Contains("cardpack") || name.Contains("chest"))
+                    {
+                        OnionQOLPlugin.Log?.LogInfo("Onion QOL: box object name=" + go.name + " active=" + go.activeSelf);
+                        count++;
+                        if (count >= 20)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
@@ -587,20 +634,11 @@ namespace OnionQOL
             DestroyAllSelectableCards();
             GetCards(seq).Clear();
 
-            try
+            CardPile boulderPile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
+            DestroyCardPile(boulderPile);
+            if (boulderPile != null)
             {
-                CardPile pile = AccessTools.Field(typeof(CardChoicesSequencer), "deckPile")?.GetValue(seq) as CardPile;
-                if (pile != null)
-                {
-                    if (pile.gameObject.activeInHierarchy)
-                    {
-                        pile.StartCoroutine(pile.DestroyCards());
-                    }
-                    pile.gameObject.SetActive(false);
-                }
-            }
-            catch
-            {
+                boulderPile.gameObject.SetActive(false);
             }
 
             try
@@ -632,17 +670,8 @@ namespace OnionQOL
             HideObject(AccessTools.Field(typeof(BuyPeltsSequencer), "knife")?.GetValue(seq) as GameObject);
             HideObject(AccessTools.Field(typeof(BuyPeltsSequencer), "weightsBlocker")?.GetValue(seq) as GameObject);
 
-            try
-            {
-                CardPile pile = AccessTools.Field(typeof(BuyPeltsSequencer), "deckPile")?.GetValue(seq) as CardPile;
-                if (pile != null && pile.gameObject.activeInHierarchy)
-                {
-                    pile.StartCoroutine(pile.DestroyCards());
-                }
-            }
-            catch
-            {
-            }
+            CardPile buyPile = AccessTools.Field(typeof(BuyPeltsSequencer), "deckPile")?.GetValue(seq) as CardPile;
+            DestroyCardPile(buyPile);
 
             try
             {
