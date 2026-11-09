@@ -1,9 +1,9 @@
 import os
 import zipfile
 
-folder = r"C:\Users\a1881\AppData\Roaming\r2modmanPlus-local\Inscryption\cache\OnionandApple_Team-Onion_QOL\0.1.1"
+folder = r"C:\Users\a1881\AppData\Roaming\r2modmanPlus-local\dev\OnionQOL"
 dll = r"C:\Users\a1881\AppData\Roaming\r2modmanPlus-local\dev\OnionQOL\bin\Release\OnionQOL.dll"
-out = r"C:\Users\a1881\Desktop\Onion_QOL-0.1.0.zip"
+out = r"C:\Users\a1881\Desktop\Onion_QOL-1.0.2.zip"
 
 assert os.path.exists(dll), "dll not found: " + dll
 assert os.path.exists(folder), "folder not found: " + folder
