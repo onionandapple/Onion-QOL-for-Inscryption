@@ -203,7 +203,13 @@ namespace OnionQOL
                 }
                 // 买皮进行中：陷阱被激活（开始时 SetActive(true)，结束时隐藏）
                 GameObject trap = AccessTools.Field(typeof(BuyPeltsSequencer), "trap")?.GetValue(sequencer) as GameObject;
-                if (trap != null && trap.activeSelf)
+                if (trap == null || !trap.activeSelf)
+                {
+                    continue;
+                }
+                // 只在免费毛皮卡生成之后才允许跳过（此前跳过会出 bug）
+                List<SelectableCard> purchased = AccessTools.Field(typeof(BuyPeltsSequencer), "purchasedPelts")?.GetValue(sequencer) as List<SelectableCard>;
+                if (purchased != null && purchased.Count > 0)
                 {
                     return sequencer;
                 }
