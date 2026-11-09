@@ -22,7 +22,7 @@ namespace OnionQOL
     {
         public const string GUID = "onion.qol";
         public const string PluginDisplayName = "Onion QOL";
-        public const string PluginVersion = "1.0.2";
+        public const string PluginVersion = "0.1.2";
 
         public static OnionQOLPlugin Instance;
         public static ManualLogSource Log;
